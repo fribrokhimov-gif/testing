@@ -1,0 +1,15 @@
+image: mcr.microsoft.com/playwright:v1.48.0-noble
+
+stages:
+  - test
+
+playwright-e2e:
+  stage: test
+  script:
+    - npm ci
+    - npx playwright test
+  artifacts:
+    when: always
+    paths:
+      - playwright-report/
+    expire_in: 14 days
