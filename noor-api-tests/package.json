@@ -1,0 +1,35 @@
+{
+  "name": "noor-merchant-api-tests",
+  "private": true,
+  "scripts": {
+    "test": "playwright test",
+    "test:delivery": "playwright test --project=delivery",
+    "test:eats": "playwright test --project=eats",
+    "test:common": "playwright test --project=common",
+    "test:admin": "playwright test --project=admin",
+    "test:auth": "playwright test tests/common/auth.spec.ts",
+    "test:employees": "playwright test tests/common/employees.spec.ts",
+    "test:merchant": "playwright test tests/common/merchant.spec.ts",
+    "test:chats": "playwright test tests/delivery/chats.spec.ts",
+    "test:password": "PASSWORD_TESTS=1 playwright test tests/common/password.spec.ts --workers=1",
+    "test:branches": "playwright test tests/delivery/branches.spec.ts",
+    "test:search": "playwright test tests/delivery/search.spec.ts",
+    "test:pricing": "playwright test tests/delivery/pricing.spec.ts",
+    "test:reports": "playwright test tests/delivery/reports.spec.ts",
+    "test:categories": "playwright test tests/eats/categories.spec.ts",
+    "test:products": "playwright test tests/eats/products.spec.ts",
+    "test:restaurants": "playwright test tests/eats/restaurants.spec.ts",
+    "test:promotions": "playwright test tests/eats/promotions.spec.ts",
+    "test:modifiers": "playwright test tests/eats/modifiers.spec.ts",
+    "test:moderation": "playwright test tests/eats/moderation.spec.ts",
+    "test:admin-moderation": "playwright test tests/admin/moderation.spec.ts",
+    "test:eats-orders": "playwright test tests/eats/orders.spec.ts",
+    "report": "playwright show-report"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.48.0",
+    "@types/node": "^22.0.0",
+    "dotenv": "^16.4.5",
+    "exceljs": "^4.4.0"
+  }
+}
