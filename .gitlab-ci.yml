@@ -1,15 +1,26 @@
-image: mcr.microsoft.com/playwright:v1.48.0-noble
+# Noor E2E tests — manual job (drives the real merchant panel on the shared Noor test environment).
+# Set MERCHANT_PHONE and MERCHANT_PASSWORD in Settings → CI/CD → Variables (masked).
+# Run one area by setting NOOR_AREA to delivery | eats | common when starting the job.
+# Keep the image tag equal to the Playwright version in noor-e2e-tests/package-lock.json.
 
 stages:
   - test
 
-playwright-e2e:
+noor-e2e-tests:
   stage: test
-  script:
+  image: mcr.microsoft.com/playwright:v1.64.0-noble
+  when: manual
+  variables:
+    CI: "true"
+    NOOR_AREA: all
+  before_script:
+    - cd noor-e2e-tests
     - npm ci
-    - npx playwright test
+  script:
+    - if [ "$NOOR_AREA" = "all" ]; then npm run test:e2e; else npx playwright test --project="e2e-$NOOR_AREA"; fi
   artifacts:
     when: always
     paths:
-      - playwright-report/
+      - noor-e2e-tests/playwright-report/
+      - noor-e2e-tests/test-results/
     expire_in: 14 days

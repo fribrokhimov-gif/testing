@@ -1,42 +1,47 @@
-# Playwright + CI/CD practice repo
+# Noor merchant — E2E tests
 
-A minimal, self-contained project for practicing e2e test automation with CI.
+Browser end-to-end tests for the **Noor merchant panel** (https://tmerchant.noor.uz, test environment),
+written with [Playwright Test](https://playwright.dev) in TypeScript. Everything lives in
+[`noor-e2e-tests/`](noor-e2e-tests/).
 
-- `public/index.html` — a tiny todo-list app (vanilla JS, no build step, no external network calls)
-- `tests/add-todo.spec.js` — adds an item, checks the list and count
-- `tests/delete-todo.spec.js` — adds two items, deletes one, checks the list and count
-- `.github/workflows/playwright.yml` — GitHub Actions pipeline
-- `.gitlab-ci.yml` — GitLab CI pipeline (uses Microsoft's prebuilt Playwright image, so no browser-install step needed)
+> Backend API tests are on the [`api-testing`](../../tree/api-testing) branch.
+
+## What is covered
+
+| Area (Playwright project) | Folder | Covers |
+|---|---|---|
+| `e2e-delivery` | `tests/e2e/delivery` | reports list and period display, new-report dialog (export request intercepted — nothing is created) |
+| `e2e-eats` | `tests/e2e/eats` | categories: create → search → edit → delete, cards vs API, known UI bugs |
+| `e2e-common` | `tests/e2e/common` | login page (access, validation, phone mask, remember me, language, theme), logout, welcome page, profile (name/logo, restored after each test), employees (list, tabs, search, add/edit form validation — writes blocked), change-password form validation |
+
+Each area logs in once through the real login page (`tests/e2e/auth.setup.ts`) and keeps its own session file in `.auth/`,
+so areas can run in parallel. Known UI bugs stay in the suite as `test.fail(true, 'Known: …')`.
 
 ## Run locally
 
 ```bash
+cd noor-e2e-tests
 npm install
-npx playwright install --with-deps chromium   # one-time browser download
-npx playwright test                           # headless run
-npx playwright test --headed                  # watch it click through the browser
-npx playwright show-report                    # open the HTML report
+npx playwright install chromium     # one-time browser download
+cp .env.example .env                # MERCHANT_PHONE / MERCHANT_PASSWORD (never commit .env)
+
+npm run test:e2e                    # all areas
+npm run test:e2e:eats               # one area: test:e2e:delivery | test:e2e:eats | test:e2e:common
+npm run report                      # HTML report
+
+# Watch one test slowly in a visible browser
+SLOWMO=800 npx playwright test --project=e2e-eats --headed -g "create a category"
 ```
 
-## Exercise the CI pipeline
+## CI
 
-**GitHub:**
-1. Create a new empty repo on GitHub.
-2. From this folder: `git init && git add -A && git commit -m "init"`
-3. `git remote add origin <your-repo-url> && git branch -M main && git push -u origin main`
-4. Open the "Actions" tab on the repo — the workflow runs automatically on push.
+- **GitHub Actions:** Actions → *Noor E2E tests* → **Run workflow** (pick an area). Add `MERCHANT_PHONE` and `MERCHANT_PASSWORD` as repository secrets.
+  The HTML report is attached to every run; screenshots and traces are attached when something fails.
+- **GitLab CI:** the `noor-e2e-tests` job is manual and uses Microsoft's Playwright image (browsers preinstalled).
 
-**GitLab:**
-1. Create a new empty project on GitLab.
-2. Same `git init`/commit/push flow, pointed at the GitLab remote.
-3. Open "CI/CD > Pipelines" — it runs automatically since `.gitlab-ci.yml` is at the repo root.
+## Safety notes (shared test environment)
 
-You only need one of the two CI files depending on where you push — feel free to delete the other, or keep both (GitHub will ignore `.gitlab-ci.yml` and vice versa).
-
-## Things worth practicing once it's running
-
-- Break a test on purpose (e.g. change `'1'` to `'2'` in an assertion) and watch CI go red.
-- Open the uploaded `playwright-report` artifact from a failed run and read the trace.
-- Add a third test and watch the matrix pick it up automatically.
-- Try adding a second browser project (`firefox`, `webkit`) in `playwright.config.js`.
-- Make the pipeline required to pass before merging a PR (GitHub branch protection / GitLab merge request rules).
+- Test data is named `QA-autotest…` and cleaned up, even when a test fails; nothing is submitted for moderation.
+- The tests never submit delivery orders, chat messages, new employees, password changes or "forgot password" SMS —
+  those requests are blocked or never sent.
+- Profile tests restore the merchant name and logo after every test.

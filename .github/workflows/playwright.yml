@@ -1,39 +1,64 @@
-name: Playwright E2E Tests
+name: Noor E2E tests
 
+# Manual only: the tests drive the real merchant panel on the shared Noor test environment.
+# Actions → "Noor E2E tests" → Run workflow.
 on:
-  push:
-    branches: [main]
-  pull_request:
-    branches: [main]
+  workflow_dispatch:
+    inputs:
+      area:
+        description: Which area to run
+        type: choice
+        default: all
+        options: [all, delivery, eats, common]
+
+concurrency:
+  group: noor-e2e-tests
+  cancel-in-progress: false
 
 jobs:
-  test:
-    timeout-minutes: 15
+  e2e-tests:
     runs-on: ubuntu-latest
-
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: noor-e2e-tests
+    env:
+      CI: true
+      # Repository secrets (Settings → Secrets and variables → Actions)
+      MERCHANT_PHONE: ${{ secrets.MERCHANT_PHONE }}
+      MERCHANT_PASSWORD: ${{ secrets.MERCHANT_PASSWORD }}
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
-          node-version: lts/*
+          node-version: 22
           cache: npm
+          cache-dependency-path: noor-e2e-tests/package-lock.json
 
       - name: Install dependencies
         run: npm ci
 
-      - name: Install Playwright browsers
+      - name: Install Chromium
         run: npx playwright install --with-deps chromium
 
-      - name: Run Playwright tests
-        run: npx playwright test
+      - name: Run E2E tests
+        run: |
+          if [ "${{ inputs.area }}" = "all" ]; then npm run test:e2e; else npx playwright test --project=e2e-${{ inputs.area }}; fi
 
       - name: Upload HTML report
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: playwright-report
-          path: playwright-report/
+          name: noor-e2e-report-${{ inputs.area }}
+          path: noor-e2e-tests/playwright-report/
+          retention-days: 14
+
+      # Screenshots and traces of failed tests (open a trace at https://trace.playwright.dev)
+      - name: Upload failure traces
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: noor-e2e-traces-${{ inputs.area }}
+          path: noor-e2e-tests/test-results/
           retention-days: 14
