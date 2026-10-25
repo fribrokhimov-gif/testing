@@ -1,5 +1,5 @@
 {
-  "name": "noor-merchant-api-tests",
+  "name": "noor-merchant-e2e-tests",
   "private": true,
   "scripts": {
     "test": "playwright test --project=delivery --project=eats --project=common --project=admin",
