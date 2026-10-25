@@ -87,7 +87,10 @@ for (const [role, { phone, password }] of Object.entries(ACCOUNTS)) {
 // Negative cases on one account: the cashier if set, else the manager, else the admin.
 // Minimum length (8) and new = old are only checked by the panel today — see the backlog tests below.
 test.describe('Change password — invalid requests', () => {
-  const [role, acc] = (['cashier', 'manager', 'admin'] as const).map((r) => [r, ACCOUNTS[r]] as const).find(([, a]) => a.phone && a.password)!;
+  // Without credentials (e.g. a fresh clone with no .env) fall back to admin; the tests then skip themselves
+  const [role, acc] = (['cashier', 'manager', 'admin'] as const).map((r) => [r, ACCOUNTS[r]] as const).find(([, a]) => a.phone && a.password)
+    ?? (['admin', ACCOUNTS.admin] as const);
+  test.beforeEach(() => test.skip(!acc.phone || !acc.password, 'Set MERCHANT_PHONE / MERCHANT_PASSWORD in .env'));
   const temp = `${acc.password}Qa1`;
 
   // Safety net: if anything got through, put the original password back
