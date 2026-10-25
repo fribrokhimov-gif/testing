@@ -1,15 +1,25 @@
-image: mcr.microsoft.com/playwright:v1.48.0-noble
+# Noor API tests — manual job (they act on the shared Noor test environment).
+# Set the variables in Settings → CI/CD → Variables (masked): MERCHANT_PHONE, MERCHANT_PASSWORD,
+# ADMIN_PHONE, ADMIN_PASSWORD, and optionally CASHIER_*, MANAGER_*.
+# Run a single suite by setting NOOR_PROJECT to delivery | eats | common | admin when starting the job.
 
 stages:
   - test
 
-playwright-e2e:
+noor-api-tests:
   stage: test
-  script:
+  image: node:22
+  when: manual
+  variables:
+    CI: "true"
+    NOOR_PROJECT: all
+  before_script:
+    - cd noor-api-tests
     - npm ci
-    - npx playwright test
+  script:
+    - if [ "$NOOR_PROJECT" = "all" ]; then npm test; else npx playwright test --project="$NOOR_PROJECT"; fi
   artifacts:
     when: always
     paths:
-      - playwright-report/
+      - noor-api-tests/playwright-report/
     expire_in: 14 days

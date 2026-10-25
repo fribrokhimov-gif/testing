@@ -1,42 +1,57 @@
-# Playwright + CI/CD practice repo
+# Noor merchant — API tests
 
-A minimal, self-contained project for practicing e2e test automation with CI.
+Backend API tests for the **Noor merchant panel** on the test environment, written with
+[Playwright Test](https://playwright.dev/docs/api-testing) in TypeScript. Everything lives in
+[`noor-api-tests/`](noor-api-tests/).
 
-- `public/index.html` — a tiny todo-list app (vanilla JS, no build step, no external network calls)
-- `tests/add-todo.spec.js` — adds an item, checks the list and count
-- `tests/delete-todo.spec.js` — adds two items, deletes one, checks the list and count
-- `.github/workflows/playwright.yml` — GitHub Actions pipeline
-- `.gitlab-ci.yml` — GitLab CI pipeline (uses Microsoft's prebuilt Playwright image, so no browser-install step needed)
+> Browser (E2E) tests are on the [`e2e-testing`](../../tree/e2e-testing) branch.
+
+## What is covered
+
+| Suite (Playwright project) | Folder | Covers |
+|---|---|---|
+| `delivery` | `tests/delivery` | branch addresses, order search & status tabs, pricing, reports (Excel content), support chats |
+| `eats` | `tests/eats` | categories, products, modifiers, branches (restaurants), promotions, orders, moderation (merchant side) |
+| `common` | `tests/common` | login/logout, employees & roles, merchant profile (name/logo), change password |
+| `admin` | `tests/admin` | cpanel moderation: approve/reject, overlaps & races, parent/child dependencies, admin actions, data correctness |
+
+Known backend bugs stay in the suite as `test.fail(true, 'Known: …')`: they show ✘ in the list but don't fail the run,
+and turn red once fixed — then remove the marker.
 
 ## Run locally
 
 ```bash
+cd noor-api-tests
 npm install
-npx playwright install --with-deps chromium   # one-time browser download
-npx playwright test                           # headless run
-npx playwright test --headed                  # watch it click through the browser
-npx playwright show-report                    # open the HTML report
+cp .env.example .env        # fill in phones and passwords (never commit .env)
+
+npm test                    # all API suites
+npm run test:eats           # one suite: test:delivery | test:eats | test:common | test:admin
+npx playwright test tests/eats/products.spec.ts   # one file
+npm run report              # open the HTML report
 ```
 
-## Exercise the CI pipeline
+`npm run test:password` runs the change-password tests on their own (they log every session out).
 
-**GitHub:**
-1. Create a new empty repo on GitHub.
-2. From this folder: `git init && git add -A && git commit -m "init"`
-3. `git remote add origin <your-repo-url> && git branch -M main && git push -u origin main`
-4. Open the "Actions" tab on the repo — the workflow runs automatically on push.
+## Credentials (`.env` locally, repository secrets in CI)
 
-**GitLab:**
-1. Create a new empty project on GitLab.
-2. Same `git init`/commit/push flow, pointed at the GitLab remote.
-3. Open "CI/CD > Pipelines" — it runs automatically since `.gitlab-ci.yml` is at the repo root.
+| Variable | Needed for |
+|---|---|
+| `MERCHANT_PHONE`, `MERCHANT_PASSWORD` | everything (merchant admin) |
+| `ADMIN_PHONE`, `ADMIN_PASSWORD` | `admin` suite — cpanel moderator |
+| `CASHIER_*`, `MANAGER_*` | role tests (skipped when unset) |
+| `EMPLOYEE_TEST_PHONE`, `EMPLOYEE_TEST_PHONE_2` | adding employees — **sends a real SMS**, use numbers you control (skipped when unset) |
 
-You only need one of the two CI files depending on where you push — feel free to delete the other, or keep both (GitHub will ignore `.gitlab-ci.yml` and vice versa).
+## CI
 
-## Things worth practicing once it's running
+- **GitHub Actions:** Actions → *Noor API tests* → **Run workflow** (pick a suite). Add the variables above as repository secrets.
+- **GitLab CI:** the `noor-api-tests` job is manual; set the variables under Settings → CI/CD → Variables.
 
-- Break a test on purpose (e.g. change `'1'` to `'2'` in an assertion) and watch CI go red.
-- Open the uploaded `playwright-report` artifact from a failed run and read the trace.
-- Add a third test and watch the matrix pick it up automatically.
-- Try adding a second browser project (`firefox`, `webkit`) in `playwright.config.js`.
-- Make the pipeline required to pass before merging a PR (GitHub branch protection / GitLab merge request rules).
+Both are manual on purpose — see the safety notes.
+
+## Safety notes (shared test environment)
+
+- Test data is named `QA-autotest…` and always cleaned up, even when a test fails.
+- Each run **opens one support chat** (seen by the support team) and **creates one report** (reports cannot be deleted).
+- The admin suite only approves/rejects change requests it created itself.
+- Promotions use dates ~2 months ahead, so today's prices never change.

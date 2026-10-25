@@ -1,3 +1,14 @@
+# Dependencies and Playwright output
 node_modules/
 playwright-report/
+blob-report/
 test-results/
+
+# Secrets and saved sessions — never commit
+.env
+.auth/
+
+# OS / editor
+.DS_Store
+.vscode/
+.idea/
